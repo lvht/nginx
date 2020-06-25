@@ -93,6 +93,7 @@
 #define NGX_HTTP_FORBIDDEN                 403
 #define NGX_HTTP_NOT_FOUND                 404
 #define NGX_HTTP_NOT_ALLOWED               405
+#define NGX_HTTP_PROXY_AUTH_REQUIRED       407
 #define NGX_HTTP_REQUEST_TIME_OUT          408
 #define NGX_HTTP_CONFLICT                  409
 #define NGX_HTTP_LENGTH_REQUIRED           411
@@ -208,6 +209,9 @@ typedef struct {
 #endif
 
     ngx_table_elt_t                  *authorization;
+#if (NGX_HTTP_PROXY_CONNECT)
+    ngx_table_elt_t                  *proxy_authorization;
+#endif
 
     ngx_table_elt_t                  *keep_alive;
 

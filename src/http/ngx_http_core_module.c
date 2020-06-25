@@ -1938,12 +1938,16 @@ ngx_http_auth_basic_user(ngx_http_request_t *r)
         return NGX_DECLINED;
     }
 
-    if (r->headers_in.authorization == NULL) {
+    if (r->headers_in.authorization != NULL) {
+        encoded = r->headers_in.authorization->value;
+#if (NGX_HTTP_PROXY_CONNECT)
+    } else if (r->headers_in.proxy_authorization != NULL) {
+        encoded = r->headers_in.proxy_authorization->value;
+#endif
+    } else {
         r->headers_in.user.data = (u_char *) "";
         return NGX_DECLINED;
     }
-
-    encoded = r->headers_in.authorization->value;
 
     if (encoded.len < sizeof("Basic ") - 1
         || ngx_strncasecmp(encoded.data, (u_char *) "Basic ",
