@@ -77,6 +77,9 @@ ngx_http_chunked_header_filter(ngx_http_request_t *r)
         clcf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
 
         if (r->http_version >= NGX_HTTP_VERSION_11
+#if (NGX_HTTP_PROXY_CONNECT)
+            && r->method != NGX_HTTP_CONNECT
+#endif
             && clcf->chunked_transfer_encoding)
         {
             if (r->expect_trailers) {
