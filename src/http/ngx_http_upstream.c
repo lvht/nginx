@@ -45,6 +45,10 @@ static ngx_int_t ngx_http_upstream_send_request_body(ngx_http_request_t *r,
     ngx_http_upstream_t *u, ngx_uint_t do_write);
 static void ngx_http_upstream_send_request_handler(ngx_http_request_t *r,
     ngx_http_upstream_t *u);
+#if (NGX_HTTP_PROXY_CONNECT)
+static void ngx_http_upstream_send_connected_handler(ngx_http_request_t *r,
+    ngx_http_upstream_t *u);
+#endif
 static void ngx_http_upstream_read_request_handler(ngx_http_request_t *r);
 static void ngx_http_upstream_process_header(ngx_http_request_t *r,
     ngx_http_upstream_t *u);
@@ -1563,6 +1567,12 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
     u->write_event_handler = ngx_http_upstream_send_request_handler;
     u->read_event_handler = ngx_http_upstream_process_header;
 
+#if (NGX_HTTP_PROXY_CONNECT)
+    if (u->connect) {
+	    u->write_event_handler = ngx_http_upstream_send_connected_handler;
+    }
+#endif
+
     c->sendfile &= r->connection->sendfile;
     u->output.sendfile = c->sendfile;
 
@@ -1644,6 +1654,13 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
         return;
     }
 
+#endif
+
+#if (NGX_HTTP_PROXY_CONNECT)
+    if (u->connect) {
+	    ngx_http_upstream_send_connected_handler(r, u);
+	    return;
+    }
 #endif
 
     ngx_http_upstream_send_request(r, u, 1);
@@ -2256,6 +2273,40 @@ ngx_http_upstream_send_request_handler(ngx_http_request_t *r,
 
     ngx_http_upstream_send_request(r, u, 1);
 }
+
+#if (NGX_HTTP_PROXY_CONNECT)
+static void
+ngx_http_upstream_send_connected_handler(ngx_http_request_t *r,
+    ngx_http_upstream_t *u)
+{
+    ngx_connection_t  *c;
+
+    if (u->header_sent) {
+	    return;
+    }
+
+    c = u->peer.connection;
+
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "http upstream send connected handler");
+
+    if (c->write->timedout) {
+        ngx_http_upstream_finalize_request(r, u, NGX_HTTP_BAD_GATEWAY);
+        return;
+    }
+
+    if (u->state->connect_time == (ngx_msec_t) -1) {
+        u->state->connect_time = ngx_current_msec - u->start_time;
+    }
+
+    r->headers_out.status = NGX_HTTP_OK;
+    r->chunked = 0;
+
+    u->upgrade = 1;
+
+    ngx_http_upstream_send_response(r, u);
+}
+#endif
 
 
 static void
@@ -3379,19 +3430,20 @@ ngx_http_upstream_process_upgraded(ngx_http_request_t *r,
             do_write = 1;
         }
 
-        if (b->start == NULL) {
-            b->start = ngx_palloc(r->pool, u->conf->buffer_size);
-            if (b->start == NULL) {
-                ngx_http_upstream_finalize_request(r, u, NGX_ERROR);
-                return;
-            }
+    }
 
-            b->pos = b->start;
-            b->last = b->start;
-            b->end = b->start + u->conf->buffer_size;
-            b->temporary = 1;
-            b->tag = u->output.tag;
+    if (b->start == NULL) {
+        b->start = ngx_palloc(r->pool, u->conf->buffer_size);
+        if (b->start == NULL) {
+            ngx_http_upstream_finalize_request(r, u, NGX_ERROR);
+            return;
         }
+
+        b->pos = b->start;
+        b->last = b->start;
+        b->end = b->start + u->conf->buffer_size;
+        b->temporary = 1;
+        b->tag = u->output.tag;
     }
 
     for ( ;; ) {

@@ -84,6 +84,9 @@ typedef struct {
     ngx_http_proxy_vars_t          vars;
 
     ngx_flag_t                     redirect;
+#if (NGX_HTTP_PROXY_CONNECT)
+    ngx_flag_t                     connect;
+#endif
 
     ngx_uint_t                     http_version;
 
@@ -125,6 +128,7 @@ static ngx_int_t ngx_http_proxy_eval(ngx_http_request_t *r,
 static ngx_int_t ngx_http_proxy_create_key(ngx_http_request_t *r);
 #endif
 static ngx_int_t ngx_http_proxy_create_request(ngx_http_request_t *r);
+static ngx_int_t ngx_http_proxy_create_empty_request(ngx_http_request_t *r);
 static ngx_int_t ngx_http_proxy_reinit_request(ngx_http_request_t *r);
 static ngx_int_t ngx_http_proxy_body_output_filter(void *data, ngx_chain_t *in);
 static ngx_int_t ngx_http_proxy_process_status_line(ngx_http_request_t *r);
@@ -226,6 +230,9 @@ static ngx_conf_bitmask_t  ngx_http_proxy_next_upstream_masks[] = {
     { ngx_null_string, 0 }
 };
 
+#if (NGX_HTTP_PROXY_CONNECT)
+static ngx_str_t proxy_connect_url = ngx_string("http://$http_host");
+#endif
 
 #if (NGX_HTTP_SSL)
 
@@ -926,6 +933,28 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
 
     u->accel = 1;
 
+#if (NGX_HTTP_PROXY_CONNECT)
+    if (plcf->connect) {
+	    if (r->method != NGX_HTTP_CONNECT) {
+            return NGX_HTTP_NOT_ALLOWED;
+	    }
+
+	    rc = ngx_http_discard_request_body(r);
+	    if (rc != NGX_OK) {
+		    return rc;
+	    }
+
+	    u->connect = 1;
+	    u->create_request = ngx_http_proxy_create_empty_request;
+
+	    r->main->count++;
+
+	    ngx_http_upstream_init(r);
+
+	    return NGX_DONE;
+    }
+#endif
+
     if (!plcf->upstream.request_buffering
         && plcf->body_values == NULL && plcf->upstream.pass_request_body
         && (!r->headers_in.chunked
@@ -1145,6 +1174,16 @@ ngx_http_proxy_create_key(ngx_http_request_t *r)
 
 #endif
 
+#if (NGX_HTTP_PROXY_CONNECT)
+static ngx_int_t
+ngx_http_proxy_create_empty_request(ngx_http_request_t *r)
+{
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
+                   "create empty http proxy request");
+
+    return NGX_OK;
+}
+#endif
 
 static ngx_int_t
 ngx_http_proxy_create_request(ngx_http_request_t *r)
@@ -2822,6 +2861,7 @@ ngx_http_proxy_create_loc_conf(ngx_conf_t *cf)
      *     conf->body_values = NULL;
      *     conf->body_source = { 0, NULL };
      *     conf->redirects = NULL;
+     *     conf->connect = 0;
      *     conf->ssl = 0;
      *     conf->ssl_protocols = 0;
      *     conf->ssl_ciphers = { 0, NULL };
@@ -3598,6 +3638,13 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     value = cf->args->elts;
 
     url = &value[1];
+
+#if (NGX_HTTP_PROXY_CONNECT)
+    if (ngx_strncasecmp(url->data, (u_char *) "connect", 7) == 0) {
+        plcf->connect = 1;
+        url = &proxy_connect_url;
+    }
+#endif
 
     n = ngx_http_script_variables_count(url);
 

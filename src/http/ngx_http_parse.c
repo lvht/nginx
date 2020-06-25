@@ -108,7 +108,9 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
         sw_start = 0,
         sw_method,
         sw_spaces_before_uri,
+#if (NGX_HTTP_PROXY_CONNECT)
         sw_spaces_after_connect,
+#endif
         sw_schema,
         sw_schema_slash,
         sw_schema_slash_slash,
@@ -242,11 +244,13 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
                     break;
 
                 case 7:
+#if (NGX_HTTP_PROXY_CONNECT)
                     if (ngx_str7_cmp(m, 'C', 'O', 'N', 'N', 'E', 'C', 'T', ' '))
                     {
                         r->method = NGX_HTTP_CONNECT;
                         break;
                     }
+#endif
 
                     if (ngx_str7_cmp(m, 'O', 'P', 'T', 'I', 'O', 'N', 'S', ' '))
                     {
@@ -275,9 +279,11 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
 
                 state = sw_spaces_before_uri;
 
+#if (NGX_HTTP_PROXY_CONNECT)
                 if (r->method == NGX_HTTP_CONNECT) {
                     state = sw_spaces_after_connect;
                 }
+#endif
 
                 break;
             }
@@ -354,6 +360,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
             }
             break;
 
+#if (NGX_HTTP_PROXY_CONNECT)
         /* space* after CONNECT method */
         case sw_spaces_after_connect:
 
@@ -364,6 +371,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
             state = sw_host_start;
 
             /* fall through */
+#endif
 
         case sw_host_start:
 
@@ -477,7 +485,6 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
                  */
                 r->uri_start = r->schema_end + 1;
                 r->uri_end = r->schema_end + 2;
-
                 state = sw_host_http_09;
                 break;
             default:
@@ -739,10 +746,12 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
             switch (ch) {
             case '/':
                 state = sw_first_major_digit;
+#if (NGX_HTTP_PROXY_CONNECT)
                 if (r->method == NGX_HTTP_CONNECT) {
                     r->uri_start = p;
                     r->uri_end = p + 1;
                 }
+#endif
 
                 break;
             default:
@@ -867,10 +876,12 @@ done:
         return NGX_HTTP_PARSE_INVALID_09_METHOD;
     }
 
+#if (NGX_HTTP_PROXY_CONNECT)
     if (r->http_version < NGX_HTTP_VERSION_11 && r->method == NGX_HTTP_CONNECT)
     {
         return NGX_HTTP_PARSE_INVALID_METHOD;
     }
+#endif
 
     return NGX_OK;
 }

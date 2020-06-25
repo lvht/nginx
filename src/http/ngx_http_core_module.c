@@ -4420,6 +4420,9 @@ static ngx_http_method_name_t  ngx_methods_names[] = {
     { (u_char *) "LOCK",      (uint32_t) ~NGX_HTTP_LOCK },
     { (u_char *) "UNLOCK",    (uint32_t) ~NGX_HTTP_UNLOCK },
     { (u_char *) "PATCH",     (uint32_t) ~NGX_HTTP_PATCH },
+#if (NGX_HTTP_PROXY_CONNECT)
+    { (u_char *) "CONNECT",   (uint32_t) ~NGX_HTTP_CONNECT },
+#endif
     { NULL, 0 }
 };
 
