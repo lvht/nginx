@@ -36,7 +36,7 @@ static char *ngx_http_auth_basic_user_file(ngx_conf_t *cf, ngx_command_t *cmd,
 static ngx_command_t  ngx_http_auth_basic_commands[] = {
 
     { ngx_string("auth_basic"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LMT_CONF
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_HTTP_LMT_CONF
                         |NGX_CONF_TAKE1,
       ngx_http_set_complex_value_slot,
       NGX_HTTP_LOC_CONF_OFFSET,
@@ -44,7 +44,7 @@ static ngx_command_t  ngx_http_auth_basic_commands[] = {
       NULL },
 
     { ngx_string("auth_basic_user_file"),
-      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LMT_CONF
+      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF|NGX_HTTP_LMT_CONF
                         |NGX_CONF_TAKE1,
       ngx_http_auth_basic_user_file,
       NGX_HTTP_LOC_CONF_OFFSET,
@@ -342,6 +342,13 @@ ngx_http_auth_basic_set_realm(ngx_http_request_t *r, ngx_str_t *realm)
     ngx_str_set(&r->headers_out.www_authenticate->key, "WWW-Authenticate");
     r->headers_out.www_authenticate->value.data = basic;
     r->headers_out.www_authenticate->value.len = len;
+
+#if (NGX_HTTP_PROXY_CONNECT)
+    if (r->method == NGX_HTTP_CONNECT) {
+	    ngx_str_set(&r->headers_out.www_authenticate->key, "Proxy-Authenticate");
+	    return NGX_HTTP_PROXY_AUTH_REQUIRED;
+    }
+#endif
 
     return NGX_HTTP_UNAUTHORIZED;
 }
