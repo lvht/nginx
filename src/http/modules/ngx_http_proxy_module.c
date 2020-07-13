@@ -231,7 +231,7 @@ static ngx_conf_bitmask_t  ngx_http_proxy_next_upstream_masks[] = {
 };
 
 #if (NGX_HTTP_PROXY_CONNECT)
-static ngx_str_t proxy_connect_url = ngx_string("http://$http_host");
+static ngx_str_t proxy_url = ngx_string("http://$http_host$uri$is_args$args");
 #endif
 
 #if (NGX_HTTP_SSL)
@@ -934,16 +934,7 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
     u->accel = 1;
 
 #if (NGX_HTTP_PROXY_CONNECT)
-    if (plcf->connect) {
-	    if (r->method != NGX_HTTP_CONNECT) {
-            return NGX_HTTP_NOT_ALLOWED;
-	    }
-
-	    rc = ngx_http_discard_request_body(r);
-	    if (rc != NGX_OK) {
-		    return rc;
-	    }
-
+    if (plcf->connect && r->method == NGX_HTTP_CONNECT) {
 	    u->connect = 1;
 	    u->create_request = ngx_http_proxy_create_empty_request;
 
@@ -3705,7 +3696,7 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 #if (NGX_HTTP_PROXY_CONNECT)
     if (ngx_strncasecmp(url->data, (u_char *) "connect", 7) == 0) {
         plcf->connect = 1;
-        url = &proxy_connect_url;
+        url = &proxy_url;
     }
 #endif
 
