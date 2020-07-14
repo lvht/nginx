@@ -343,7 +343,7 @@ ngx_http_auth_basic_set_realm(ngx_http_request_t *r, ngx_str_t *realm)
     r->headers_out.www_authenticate->value.data = basic;
     r->headers_out.www_authenticate->value.len = len;
 
-#if (NGX_HTTP_PROXY_CONNECT)
+#if (NGX_HTTP_PROXY_FORWARD)
     if (r->method == NGX_HTTP_CONNECT) {
 	    ngx_str_set(&r->headers_out.www_authenticate->key, "Proxy-Authenticate");
 	    return NGX_HTTP_PROXY_AUTH_REQUIRED;

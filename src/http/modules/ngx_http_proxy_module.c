@@ -84,8 +84,8 @@ typedef struct {
     ngx_http_proxy_vars_t          vars;
 
     ngx_flag_t                     redirect;
-#if (NGX_HTTP_PROXY_CONNECT)
-    ngx_flag_t                     connect;
+#if (NGX_HTTP_PROXY_FORWARD)
+    ngx_flag_t                     forward;
 #endif
 
     ngx_uint_t                     http_version;
@@ -229,10 +229,6 @@ static ngx_conf_bitmask_t  ngx_http_proxy_next_upstream_masks[] = {
     { ngx_string("off"), NGX_HTTP_UPSTREAM_FT_OFF },
     { ngx_null_string, 0 }
 };
-
-#if (NGX_HTTP_PROXY_CONNECT)
-static ngx_str_t proxy_url = ngx_string("http://$http_host$uri$is_args$args");
-#endif
 
 #if (NGX_HTTP_SSL)
 
@@ -933,9 +929,9 @@ ngx_http_proxy_handler(ngx_http_request_t *r)
 
     u->accel = 1;
 
-#if (NGX_HTTP_PROXY_CONNECT)
-    if (plcf->connect && r->method == NGX_HTTP_CONNECT) {
-	    u->connect = 1;
+#if (NGX_HTTP_PROXY_FORWARD)
+    if (plcf->forward && r->method == NGX_HTTP_CONNECT) {
+	    u->forward = 1;
 	    u->create_request = ngx_http_proxy_create_empty_request;
 
 	    r->main->count++;
@@ -1165,7 +1161,7 @@ ngx_http_proxy_create_key(ngx_http_request_t *r)
 
 #endif
 
-#if (NGX_HTTP_PROXY_CONNECT)
+#if (NGX_HTTP_PROXY_FORWARD)
 static ngx_int_t
 ngx_http_proxy_create_empty_request(ngx_http_request_t *r)
 {
@@ -2915,7 +2911,7 @@ ngx_http_proxy_create_loc_conf(ngx_conf_t *cf)
      *     conf->body_values = NULL;
      *     conf->body_source = { 0, NULL };
      *     conf->redirects = NULL;
-     *     conf->connect = 0;
+     *     conf->forward = 0;
      *     conf->ssl = 0;
      *     conf->ssl_protocols = 0;
      *     conf->ssl_ciphers = { 0, NULL };
@@ -3677,6 +3673,11 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     ngx_http_core_loc_conf_t   *clcf;
     ngx_http_script_compile_t   sc;
 
+#if (NGX_HTTP_PROXY_FORWARD)
+    static ngx_str_t forward_proxy_url =
+        ngx_string("http://$http_host$uri$is_args$args");
+#endif
+
     if (plcf->upstream.upstream || plcf->proxy_lengths) {
         return "is duplicate";
     }
@@ -3693,10 +3694,10 @@ ngx_http_proxy_pass(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     url = &value[1];
 
-#if (NGX_HTTP_PROXY_CONNECT)
-    if (ngx_strncasecmp(url->data, (u_char *) "connect", 7) == 0) {
-        plcf->connect = 1;
-        url = &proxy_url;
+#if (NGX_HTTP_PROXY_FORWARD)
+    if (ngx_strncasecmp(url->data, (u_char *) "forward", 7) == 0) {
+        plcf->forward = 1;
+        url = &forward_proxy_url;
     }
 #endif
 

@@ -108,7 +108,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
         sw_start = 0,
         sw_method,
         sw_spaces_before_uri,
-#if (NGX_HTTP_PROXY_CONNECT)
+#if (NGX_HTTP_PROXY_FORWARD)
         sw_spaces_after_connect,
 #endif
         sw_schema,
@@ -244,7 +244,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
                     break;
 
                 case 7:
-#if (NGX_HTTP_PROXY_CONNECT)
+#if (NGX_HTTP_PROXY_FORWARD)
                     if (ngx_str7_cmp(m, 'C', 'O', 'N', 'N', 'E', 'C', 'T', ' '))
                     {
                         r->method = NGX_HTTP_CONNECT;
@@ -279,7 +279,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
 
                 state = sw_spaces_before_uri;
 
-#if (NGX_HTTP_PROXY_CONNECT)
+#if (NGX_HTTP_PROXY_FORWARD)
                 if (r->method == NGX_HTTP_CONNECT) {
                     state = sw_spaces_after_connect;
                 }
@@ -360,7 +360,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
             }
             break;
 
-#if (NGX_HTTP_PROXY_CONNECT)
+#if (NGX_HTTP_PROXY_FORWARD)
         /* space* after CONNECT method */
         case sw_spaces_after_connect:
 
@@ -746,7 +746,7 @@ ngx_http_parse_request_line(ngx_http_request_t *r, ngx_buf_t *b)
             switch (ch) {
             case '/':
                 state = sw_first_major_digit;
-#if (NGX_HTTP_PROXY_CONNECT)
+#if (NGX_HTTP_PROXY_FORWARD)
                 if (r->method == NGX_HTTP_CONNECT) {
                     r->uri_start = p;
                     r->uri_end = p + 1;
@@ -876,7 +876,7 @@ done:
         return NGX_HTTP_PARSE_INVALID_09_METHOD;
     }
 
-#if (NGX_HTTP_PROXY_CONNECT)
+#if (NGX_HTTP_PROXY_FORWARD)
     if (r->http_version < NGX_HTTP_VERSION_11 && r->method == NGX_HTTP_CONNECT)
     {
         return NGX_HTTP_PARSE_INVALID_METHOD;

@@ -209,7 +209,7 @@ typedef struct {
 #endif
 
     ngx_table_elt_t                  *authorization;
-#if (NGX_HTTP_PROXY_CONNECT)
+#if (NGX_HTTP_PROXY_FORWARD)
     ngx_table_elt_t                  *proxy_authorization;
 #endif
 

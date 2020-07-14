@@ -1940,7 +1940,7 @@ ngx_http_auth_basic_user(ngx_http_request_t *r)
 
     if (r->headers_in.authorization != NULL) {
         encoded = r->headers_in.authorization->value;
-#if (NGX_HTTP_PROXY_CONNECT)
+#if (NGX_HTTP_PROXY_FORWARD)
     } else if (r->headers_in.proxy_authorization != NULL) {
         encoded = r->headers_in.proxy_authorization->value;
 #endif
@@ -4424,7 +4424,7 @@ static ngx_http_method_name_t  ngx_methods_names[] = {
     { (u_char *) "LOCK",      (uint32_t) ~NGX_HTTP_LOCK },
     { (u_char *) "UNLOCK",    (uint32_t) ~NGX_HTTP_UNLOCK },
     { (u_char *) "PATCH",     (uint32_t) ~NGX_HTTP_PATCH },
-#if (NGX_HTTP_PROXY_CONNECT)
+#if (NGX_HTTP_PROXY_FORWARD)
     { (u_char *) "CONNECT",   (uint32_t) ~NGX_HTTP_CONNECT },
 #endif
     { NULL, 0 }

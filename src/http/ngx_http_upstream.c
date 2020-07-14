@@ -45,7 +45,7 @@ static ngx_int_t ngx_http_upstream_send_request_body(ngx_http_request_t *r,
     ngx_http_upstream_t *u, ngx_uint_t do_write);
 static void ngx_http_upstream_send_request_handler(ngx_http_request_t *r,
     ngx_http_upstream_t *u);
-#if (NGX_HTTP_PROXY_CONNECT)
+#if (NGX_HTTP_PROXY_FORWARD)
 static void ngx_http_upstream_send_connected_handler(ngx_http_request_t *r,
     ngx_http_upstream_t *u);
 #endif
@@ -1564,8 +1564,8 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
     u->write_event_handler = ngx_http_upstream_send_request_handler;
     u->read_event_handler = ngx_http_upstream_process_header;
 
-#if (NGX_HTTP_PROXY_CONNECT)
-    if (u->connect) {
+#if (NGX_HTTP_PROXY_FORWARD)
+    if (u->forward) {
 	    u->write_event_handler = ngx_http_upstream_send_connected_handler;
     }
 #endif
@@ -1653,8 +1653,8 @@ ngx_http_upstream_connect(ngx_http_request_t *r, ngx_http_upstream_t *u)
 
 #endif
 
-#if (NGX_HTTP_PROXY_CONNECT)
-    if (u->connect) {
+#if (NGX_HTTP_PROXY_FORWARD)
+    if (u->forward) {
 	    ngx_http_upstream_send_connected_handler(r, u);
 	    return;
     }
@@ -2272,7 +2272,7 @@ ngx_http_upstream_send_request_handler(ngx_http_request_t *r,
     ngx_http_upstream_send_request(r, u, 1);
 }
 
-#if (NGX_HTTP_PROXY_CONNECT)
+#if (NGX_HTTP_PROXY_FORWARD)
 static void
 ngx_http_upstream_send_connected_handler(ngx_http_request_t *r,
     ngx_http_upstream_t *u)

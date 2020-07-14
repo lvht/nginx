@@ -397,8 +397,8 @@ struct ngx_http_upstream_s {
     unsigned                         request_body_sent:1;
     unsigned                         request_body_blocked:1;
     unsigned                         header_sent:1;
-#if (NGX_HTTP_PROXY_CONNECT)
-    unsigned                         connect:1;
+#if (NGX_HTTP_PROXY_FORWARD)
+    unsigned                         forward:1;
 #endif
 };
 
